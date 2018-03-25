@@ -1,5 +1,7 @@
 ![Camera Kit Codename One](https://raw.githubusercontent.com/codenameone/CameraKitCodenameOne/master/camera-kit-banner.jpg "Camera Kit Codename One")
 
+<img align="right" src="https://raw.githubusercontent.com/codenameone/CameraKitCodenameOne/master/camera-kit-screenshot.png" height="250">
+
 Camera Kit is a cross platform API for low level camera access. It's based on https://github.com/CameraKit/camerakit-android/[Camera Kit Android] and uses it for the Android version of this API. In iOS the implementation is based directly on the native OS API's.
 
 **Important** not all API's are implemented in a cross platform way at this time as this cn1lib is highly experimental. Basic things might not work...
@@ -32,28 +34,33 @@ if(ck != null) {
       }
   });
   hi.add(ck.getView());
-  Button grabPhoto = new Button("Picture");
-  grabPhoto.addActionListener(e -> ck.captureImage());
-  Button video = new Button("Video");
+  Button video = new Button();
+  FontImage.setMaterialIcon(video, FontImage.MATERIAL_VIDEOCAM);
   video.addActionListener(e -> {
       Boolean b = (Boolean)video.getClientProperty("capturing");
       if(b == null) {
           video.putClientProperty("capturing", Boolean.TRUE);
           ck.captureVideo();
-          video.setText("Stop");
+          FontImage.setMaterialIcon(video, FontImage.MATERIAL_VIDEOCAM_OFF);
       } else {
           video.putClientProperty("capturing", null);
           ck.stopVideo();
-          video.setText("Video");
+          FontImage.setMaterialIcon(video, FontImage.MATERIAL_VIDEOCAM);
       }
   });
-  Button toggleCamera = new Button("Toggle Camera");
-  Button toggleFlash = new Button("Toggle Flash");
+  FloatingActionButton fab = FloatingActionButton.createFAB(FontImage.MATERIAL_CAMERA);
+  fab.bindFabToContainer(hi, CENTER, BOTTOM);
+  fab.addActionListener(e -> ck.captureImage());
+
+  Button toggleCamera = new Button();
+  FontImage.setMaterialIcon(toggleCamera, FontImage.MATERIAL_CAMERA_FRONT);
+  Button toggleFlash = new Button();
+  FontImage.setMaterialIcon(toggleFlash, FontImage.MATERIAL_FLASH_ON);
   toggleCamera.addActionListener(e -> ck.toggleFacing());
   toggleFlash.addActionListener(e -> ck.toggleFlash());
-  Container buttons = BoxLayout.encloseX(grabPhoto, video, toggleCamera, toggleFlash);
-  buttons.setScrollableX(true);
-  hi.add(BorderLayout.south(buttons));
+  Container buttons = BoxLayout.encloseY(video, toggleCamera, toggleFlash);
+  buttons.setScrollableY(true);
+  hi.add(BorderLayout.east(buttons));
   hi.show();
 }
 ````
