@@ -6,6 +6,10 @@ Camera Kit is a cross platform API for low level camera access. It's based on ht
 
 **Important** not all API's are implemented in a cross platform way at this time as this cn1lib is highly experimental. Basic things might not work...
 
+## License 
+
+The code in this repository is under the MIT license which effectively allows you to do with it as you please. We'd still be happy to get good pull requests.
+
 ## Basic Usage
 
 ````java
