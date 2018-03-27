@@ -177,49 +177,47 @@ extern JAVA_OBJECT nsDataToByteArr(NSData *data);
                 }
             }
         }
-        NSError *error = nil;
-        AVCaptureDeviceInput *input = [AVCaptureDeviceInput deviceInputWithDevice:device error:&error];
-        captureSession = [[AVCaptureSession alloc] init];
-        [captureSession addInput:input];
-        
-        previewLayer = [AVCaptureVideoPreviewLayer layerWithSession:captureSession];
-        previewLayer.videoGravity = AVLayerVideoGravityResizeAspectFill;
-        [container setLayer:previewLayer];
-        [container.layer addSublayer:previewLayer];
-        
-        [self updateFlash];
-        [self updateZoom];
-        [self updateFocus];
-        [self updateVideoQuality];
-
-        [captureSession startRunning];
     }
+    NSError *error = nil;
+    AVCaptureDeviceInput *input = [AVCaptureDeviceInput deviceInputWithDevice:device error:&error];
+    captureSession = [[AVCaptureSession alloc] init];
+    [captureSession addInput:input];
+
+    previewLayer = [AVCaptureVideoPreviewLayer layerWithSession:captureSession];
+    previewLayer.videoGravity = AVLayerVideoGravityResizeAspectFill;
+    [container setLayer:previewLayer];
+    [container.layer addSublayer:previewLayer];
+
+    [self updateFlash];
+    [self updateZoom];
+    [self updateFocus];
+    [self updateVideoQuality];
+
+    [captureSession startRunning];
 }
 
 -(void)lazyInit {
     dispatch_sync(dispatch_get_main_queue(), ^{
         container = [[CameraKitView alloc] init];
-        if(device == nil) {
-            switch ( [AVCaptureDevice authorizationStatusForMediaType:AVMediaTypeVideo] ) {
-                case AVAuthorizationStatusNotDetermined:
-                    [AVCaptureDevice requestAccessForMediaType:AVMediaTypeVideo completionHandler:^( BOOL granted ) {
-                        if ( ! granted ) {
-                            authorized = NO;
-                            return;
-                        }
-                        authorized = YES;
-                        [self lazyInitPostAuthorization];
-                    }];
-                    break;
-                case AVAuthorizationStatusDenied:
-                case AVAuthorizationStatusRestricted:
-                    authorized = NO;
-                    break;
-                case AVAuthorizationStatusAuthorized:
+        switch ( [AVCaptureDevice authorizationStatusForMediaType:AVMediaTypeVideo] ) {
+            case AVAuthorizationStatusNotDetermined:
+                [AVCaptureDevice requestAccessForMediaType:AVMediaTypeVideo completionHandler:^( BOOL granted ) {
+                    if ( ! granted ) {
+                        authorized = NO;
+                        return;
+                    }
                     authorized = YES;
                     [self lazyInitPostAuthorization];
-                    break;
-            }
+                }];
+                break;
+            case AVAuthorizationStatusDenied:
+            case AVAuthorizationStatusRestricted:
+                authorized = NO;
+                break;
+            case AVAuthorizationStatusAuthorized:
+                authorized = YES;
+                [self lazyInitPostAuthorization];
+                break;
         }
     });
 }
