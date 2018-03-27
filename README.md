@@ -69,6 +69,8 @@ if(ck != null) {
 }
 ````
 
+You can see the full demo project [here](https://github.com/codenameone/CameraKitCodenameOne).
+
 ## Caveats
 
 If used in the first form of the application it is recommended that you have a splash screen at least for the first time the application loads. This is essential for iOS where [screenshots are generated for the splash screens](https://www.codenameone.com/manual/appendix-ios.html).
