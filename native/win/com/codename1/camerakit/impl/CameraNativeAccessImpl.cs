@@ -116,5 +116,9 @@ public class CameraNativeAccessImpl : ICameraNativeAccessImpl {
         return false;
     }
 
+    public bool supportsFeature(int feature) {
+        return false;
+    }
+
 }
 }

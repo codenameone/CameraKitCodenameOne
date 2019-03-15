@@ -49,6 +49,7 @@ public interface CameraNativeAccess extends NativeInterface {
 
     public int getCaptureWidth();
     public int getCaptureHeight();
+    public boolean supportsFeature(int feature);
 
     
     //public boolean setTextDetectionListener(final CameraKitEventCallback<CameraKitTextDetect> callback) 

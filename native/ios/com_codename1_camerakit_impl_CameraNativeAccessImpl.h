@@ -80,5 +80,5 @@ const int VIDEO_QUALITY_QVGA = 6;
 -(int)getCaptureHeight;
 -(BOOL)isSupported;
 - (void)captureOutput:(nonnull AVCaptureFileOutput *)output didFinishRecordingToOutputFileAtURL:(nonnull NSURL *)outputFileURL fromConnections:(nonnull NSArray<AVCaptureConnection *> *)connections error:(nullable NSError *)error;
-
+-(BOOL)supportsFeature:(int)param;
 @end

@@ -115,4 +115,8 @@ public class CameraNativeAccessImpl {
         return false;
     }
 
+    public boolean supportsFeature(int feature) {
+        return false;
+    }
+    
 }

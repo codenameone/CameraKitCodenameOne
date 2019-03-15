@@ -37,6 +37,10 @@ var o = {};
     o.setFlash__int = function(param1, callback) {
         callback.error(new Error("Not implemented yet"));
     };
+    
+    o.supportsFeature__int = function(param1, callback) {
+        callback.error(new Error("Not implemented yet"));
+    };
 
     o.captureVideo_ = function(callback) {
         callback.error(new Error("Not implemented yet"));

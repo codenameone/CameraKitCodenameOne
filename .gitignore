@@ -5,3 +5,8 @@ build/
 nbbuild/
 dist/
 lib/CodenameOne_SRC.zip
+/CameraKitDemo/nbproject/private/
+/TestWebCamJavaSE/nbproject/private/
+/CameraKitDemo/native/internal_tmp
+/CameraKitDemo/lib/impl
+/CameraKitDemo/lib/CameraKitCodenameOne.cn1lib

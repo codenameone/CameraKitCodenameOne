@@ -31,12 +31,15 @@ public class CameraKit implements Constants {
                 if(!buildHints.containsKey("ios.NSCameraUsageDescription")) {
                     Display.getInstance().setProjectBuildHint("ios.NSCameraUsageDescription", "We need camera access to grab pictures and videos");
                 }
+                /*
                 if(thisIsForIOS) {
                     CameraCallbacks.onError(null, null, null);
                     CameraCallbacks.onImage(null);
                     CameraCallbacks.onVideo(null);
                 }
+                
                 return null;
+                */
             }
             instance = new CameraKit();
             instance.cma = NativeLookup.create(CameraNativeAccess.class);
@@ -239,5 +242,14 @@ public class CameraKit implements Constants {
         for(CameraListener l : listeners) {
             l.onVideo(ev);
         }
+    }
+    
+    public boolean supportsFeatures(CameraKitFeatures... features) {
+        for (CameraKitFeatures f : features) {
+            if (!cma.supportsFeature(f.ordinal())) {
+                return false;
+            }
+        }
+        return true;
     }
 }
