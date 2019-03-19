@@ -2,8 +2,10 @@ package com.codename1.camerakit.demo;
 
 import com.codename1.camerakit.CameraEvent;
 import com.codename1.camerakit.CameraKit;
+import com.codename1.camerakit.CameraKitFeatures;
 import com.codename1.camerakit.CameraListener;
 import com.codename1.components.FloatingActionButton;
+import com.codename1.components.MediaPlayer;
 import com.codename1.components.SpanLabel;
 import com.codename1.components.ToastBar;
 import static com.codename1.ui.CN.*;
@@ -18,8 +20,11 @@ import com.codename1.ui.Toolbar;
 import java.io.IOException;
 import com.codename1.ui.layouts.BoxLayout;
 import com.codename1.io.NetworkEvent;
+import com.codename1.media.Media;
+import com.codename1.media.MediaManager;
 import com.codename1.ui.Button;
 import com.codename1.ui.Command;
+import com.codename1.ui.Component;
 import com.codename1.ui.Container;
 import com.codename1.ui.FontImage;
 import com.codename1.ui.Image;
@@ -34,6 +39,7 @@ public class CameraKitDemo {
 private Form current;
     private Resources theme;
     private CameraKit ck;
+    private Reel reel;
     
     public void init(Object context) {
         ck = CameraKit.create();
@@ -51,6 +57,39 @@ private Form current;
 
     }
     
+    private class Reel extends Container {
+        
+        Reel() {
+            super(BoxLayout.y());
+            setScrollableY(true);
+        }
+        
+        
+        
+        public void addToReel(Image img) {
+            img = img.scaledWidth(isTablet() ? convertToPixels(50) : convertToPixels(20));
+            add(new Label(img));
+        }
+        
+        public void addVideo(String path) {
+            try {
+                Media m = MediaManager.createMedia(path, true);
+                m.prepare();
+                
+                //m.setNativePlayerMode(true);
+                Component videoCmp = m.getVideoComponent();
+                videoCmp.setPreferredW(isTablet() ? convertToPixels(50) : convertToPixels(20));
+                videoCmp.setPreferredH(isTablet() ? convertToPixels(30) : convertToPixels(12));
+                
+                add(videoCmp);
+                
+            } catch (Exception ex) {
+                Log.e(ex);
+                ToastBar.showErrorMessage("Failed to load video from path "+path);
+            }
+        }
+    }
+    
     public void start() {
         if(ck != null && !ck.isStarted()) {
             ck.start();
@@ -59,6 +98,7 @@ private Form current;
             current.show();
             return;
         }
+        reel = new Reel();
         Form hi = new Form("Native Camera", new LayeredLayout());
         hi.setScrollableY(false);
         if(ck != null) {
@@ -72,17 +112,27 @@ private Form current;
                 @Override
                 public void onImage(CameraEvent ev) {
                     ToastBar.showInfoMessage("Captured image bytes");
+                    byte[] bytes = ev.getJpeg();
+                    Image img = Image.createImage(bytes, 0, bytes.length);
+                    reel.addToReel(img);
+                    hi.revalidate();
                 }
 
                 @Override
                 public void onVideo(CameraEvent ev) {
                     ToastBar.showInfoMessage("Captured video: " + ev.getFile());
+                    reel.addVideo(ev.getFile());
+                    hi.revalidate();
                 }
             });
             hi.add(ck.getView());
             Button video = new Button();
             FontImage.setMaterialIcon(video, FontImage.MATERIAL_VIDEOCAM);
             video.addActionListener(e -> {
+                if (!ck.supportsFeatures(CameraKitFeatures.CaptureVideo)) {
+                    ToastBar.showErrorMessage("Video capture is not supported on this platform");
+                    return;
+                }
                 Boolean b = (Boolean)video.getClientProperty("capturing");
                 if(b == null) {
                     video.putClientProperty("capturing", Boolean.TRUE);
@@ -96,17 +146,40 @@ private Form current;
             });
             FloatingActionButton fab = FloatingActionButton.createFAB(FontImage.MATERIAL_CAMERA);
             fab.bindFabToContainer(hi, CENTER, BOTTOM);
-            fab.addActionListener(e -> ck.captureImage());
+            fab.addActionListener(e -> {
+                if (ck.supportsFeatures(CameraKitFeatures.CaptureImage)) {
+                    ck.captureImage();
+                } else {
+                    ToastBar.showErrorMessage("Image capture is not supported on this platform");
+                }
+                    
+            });
             
             Button toggleCamera = new Button();
             FontImage.setMaterialIcon(toggleCamera, FontImage.MATERIAL_CAMERA_FRONT);
             Button toggleFlash = new Button();
+            
             FontImage.setMaterialIcon(toggleFlash, FontImage.MATERIAL_FLASH_ON);
-            toggleCamera.addActionListener(e -> ck.toggleFacing());
-            toggleFlash.addActionListener(e -> ck.toggleFlash());
+            toggleCamera.addActionListener(e -> {
+                if (ck.supportsFeatures(CameraKitFeatures.ToggleFacing)) {
+                    ck.toggleFacing();
+                } else {
+                    ToastBar.showErrorMessage("Front/Back camera toggle is not supported on this platform.");
+                }
+                    
+            });
+            toggleFlash.addActionListener(e -> {
+                if (ck.supportsFeatures(CameraKitFeatures.Flash)) {
+                    ck.toggleFlash();
+                } else {
+                    ToastBar.showErrorMessage("Flash is not supported on this platform");
+                }
+            });
             Container buttons = BoxLayout.encloseY(video, toggleCamera, toggleFlash);
             buttons.setScrollableY(true);
             hi.add(BorderLayout.east(buttons));
+            
+            hi.add(BorderLayout.west(reel));
         } else {
             hi.add(BorderLayout.north(new SpanLabel("Loading native camera view")));
         }

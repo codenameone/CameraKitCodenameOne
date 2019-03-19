@@ -242,5 +242,20 @@ public class CameraNativeAccessImpl {
     public boolean isSupported() {
         return true;
     }
+    
+    /**
+     * CaptureImage=0,
+    CaptureVideo=1,
+    Zoom=2,
+    Focus=3,
+    Flash=4,
+    Crop=5
+    HorizontalViewingAngle=6
+    VerticalViewingAngle=7
+    ToggleFacing=8
+     */
+    public boolean supportsFeature(int feature) {
+        return feature >= 0 && feature < 9;
+    }
 
 }
