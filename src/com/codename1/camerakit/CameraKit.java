@@ -129,7 +129,7 @@ public class CameraKit implements Constants {
     }
     
     public void setVideoQuality(int videoQuality) {
-        cma.setVideoBitRate(videoQuality);
+        cma.setVideoQuality(videoQuality);
     }
     
     public void setVideoBitRate(int videoBirRate) {
@@ -206,6 +206,10 @@ public class CameraKit implements Constants {
         return cma.getCaptureHeight();
     }
 
+    //public int setPictureSize(int w, int h) {
+    //    cma.setPictureSize(w, h);
+    //}
+    
     public void addCameraListener(CameraListener listener) {
         listeners.add(listener);
     }

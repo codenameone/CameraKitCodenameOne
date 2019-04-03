@@ -49,6 +49,9 @@ public interface CameraNativeAccess extends NativeInterface {
 
     public int getCaptureWidth();
     public int getCaptureHeight();
+    
+    //public void setPictureSize(int w, int h);
+    
     public boolean supportsFeature(int feature);
 
     

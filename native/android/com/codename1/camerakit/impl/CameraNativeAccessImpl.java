@@ -26,6 +26,7 @@ import co.infinum.goldeneye.models.Facing;
 import co.infinum.goldeneye.models.FlashMode;
 import co.infinum.goldeneye.models.FocusMode;
 import co.infinum.goldeneye.models.VideoQuality;
+import co.infinum.goldeneye.models.Size;
 
 
 public class CameraNativeAccessImpl {
@@ -444,6 +445,15 @@ public class CameraNativeAccessImpl {
 
     public boolean isSupported() {
         return true;
+    }
+    
+    public void setPictureSize(final int w, final int h) {
+        AndroidNativeUtil.getActivity().runOnUiThread(new Runnable() {
+            public void run() {
+                
+                goldenEye.getConfig().setPictureSize(new Size(w, h));
+            }
+        });
     }
 
     /**
