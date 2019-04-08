@@ -1,4 +1,5 @@
 package com.codename1.camerakit.impl;
+import com.codename1.ui.Display;
 import com.codename1.ui.PeerComponent;
 import com.codename1.ui.util.ImageIO;
 import com.github.sarxos.webcam.Webcam;
@@ -13,6 +14,7 @@ import java.awt.EventQueue;
 import java.awt.Graphics;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayOutputStream;
+import java.util.Map;
 import javax.swing.JComponent;
 import javax.swing.JFrame;
 
@@ -97,7 +99,8 @@ public class CameraNativeAccessImpl implements com.codename1.camerakit.impl.Came
         if (starting || started) {
             return;
         }
-        
+        checkCameraUsageDescription();
+        checkMicrophoneUsageDescription();
         getWebcam().setViewSize(WebcamResolution.VGA.getSize());
         starting = true;
         webcam.open(true);
@@ -383,5 +386,36 @@ public class CameraNativeAccessImpl implements com.codename1.camerakit.impl.Came
             
         }
         return false;
+    }
+    
+    
+    private static boolean cameraUsageDescriptionChecked;
+    
+    private static void checkCameraUsageDescription() {
+        if (!cameraUsageDescriptionChecked) {
+            cameraUsageDescriptionChecked = true;
+            
+            Map<String, String> m = Display.getInstance().getProjectBuildHints();
+            if(m != null) {
+                if(!m.containsKey("ios.NSCameraUsageDescription")) {
+                    Display.getInstance().setProjectBuildHint("ios.NSCameraUsageDescription", "Some functionality of the application requires your camera");
+                }
+            }
+        }
+    }
+    
+    private static boolean microphoneUsageDescriptionChecked;
+    
+    private static void checkMicrophoneUsageDescription() {
+        if (!microphoneUsageDescriptionChecked) {
+            microphoneUsageDescriptionChecked = true;
+            
+            Map<String, String> m = Display.getInstance().getProjectBuildHints();
+            if(m != null) {
+                if(!m.containsKey("ios.NSMicrophoneUsageDescription")) {
+                    Display.getInstance().setProjectBuildHint("ios.NSMicrophoneUsageDescription", "Some functionality of the application requires your microphone");
+                }
+            }
+        }
     }
 }
