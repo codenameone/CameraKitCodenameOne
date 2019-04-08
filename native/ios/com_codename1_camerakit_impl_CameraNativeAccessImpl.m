@@ -20,9 +20,15 @@ extern JAVA_OBJECT nsDataToByteArr(NSData *data);
         stillImageOutput = nil;
         firstTimeCameraKitLaunch = NO;
         zoom = 1;
+        jpegQuality = 70;
+        globalQueue =  dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_HIGH, 0);
         [self lazyInit];
+        while (!initialized) {
+            usleep(20000); // 20 milliseconds
+        }
     } else {
-        dispatch_sync(dispatch_get_main_queue(), ^{
+        
+        dispatch_sync(globalQueue, ^{
             [captureSession startRunning];
         });
     }
@@ -41,15 +47,56 @@ extern JAVA_OBJECT nsDataToByteArr(NSData *data);
 -(void)setMethod:(int)param{
     self.method = param;
 }
+-(AVCaptureDevice*)cameraWithPosition {
+    AVCaptureDevice* dev;
+    if ([AVCaptureDeviceDiscoverySession class]) {
+        if(direction == FACING_FRONT) {
+            dev = [AVCaptureDevice defaultDeviceWithDeviceType:AVCaptureDeviceTypeBuiltInWideAngleCamera mediaType:AVMediaTypeVideo position:AVCaptureDevicePositionFront];
+        } else {
+            dev = [AVCaptureDevice defaultDeviceWithDeviceType:AVCaptureDeviceTypeBuiltInWideAngleCamera mediaType:AVMediaTypeVideo position:AVCaptureDevicePositionBack];
+        }
+    } else {
+        // Pre iOS 10 code
+        if(direction == FACING_FRONT) {
+            for(AVCaptureDevice* d in [AVCaptureDevice devices]) {
+                if(d.position == AVCaptureDevicePositionFront) {
+                    dev = d;
+                    break;
+                }
+            }
+        } else {
+            for(AVCaptureDevice* d in [AVCaptureDevice devices]) {
+                if(d.position == AVCaptureDevicePositionBack) {
+                    dev = d;
+                    break;
+                }
+            }
+        }
+    }
+    return dev;
+}
 
 -(void)updateDirection {
-    [previewLayer removeFromSuperlayer];
-    [container setLayer:nil];
-    [captureSession stopRunning];
+    //[previewLayer removeFromSuperlayer];
+    //[container setLayer:nil];
+    //[captureSession stopRunning];
     
-    [previewLayer release];
-    [captureSession release];
-    [self lazyInitPostAuthorization];
+    //[previewLayer release];
+    //previewLayer = nil;
+    //[captureSession release];
+    //captureSession = nil;
+    //[self lazyInitPostAuthorization];
+    AVCaptureInput *currInput = captureSession.inputs.firstObject;
+    if (currInput != nil) {
+        [captureSession removeInput:currInput];
+    }
+    AVCaptureDevice *newCamera = [self cameraWithPosition];
+    device = newCamera;
+    NSError *error = nil;
+    AVCaptureDeviceInput *input = [AVCaptureDeviceInput deviceInputWithDevice:newCamera error:&error];
+    [captureSession addInput:input];
+    [captureSession commitConfiguration];
+    
 }
 
 -(void)updateVideoQuality {
@@ -65,6 +112,8 @@ extern JAVA_OBJECT nsDataToByteArr(NSData *data);
             captureSession.sessionPreset = AVCaptureSessionPreset1280x720;
             break;
         case VIDEO_QUALITY_LOWEST:
+            captureSession.sessionPreset = AVCaptureSessionPresetLow;
+            break;
         case VIDEO_QUALITY_QVGA:
             captureSession.sessionPreset = AVCaptureSessionPresetLow;
             break;
@@ -72,6 +121,9 @@ extern JAVA_OBJECT nsDataToByteArr(NSData *data);
             captureSession.sessionPreset = AVCaptureSessionPreset1920x1080;
             break;
         case VIDEO_QUALITY_HIGHEST:
+            captureSession.sessionPreset = AVCaptureSessionPresetHigh;
+            break;
+            
         case VIDEO_QUALITY_2160P:
             captureSession.sessionPreset = AVCaptureSessionPreset3840x2160;
             break;
@@ -154,34 +206,32 @@ extern JAVA_OBJECT nsDataToByteArr(NSData *data);
 
 -(void)lazyInitPostAuthorization {
     // iOS 10 and later code
-    if ([AVCaptureDeviceDiscoverySession class]) {
-        if(direction == FACING_FRONT) {
-            device = [AVCaptureDevice defaultDeviceWithDeviceType:AVCaptureDeviceTypeBuiltInWideAngleCamera mediaType:AVMediaTypeVideo position:AVCaptureDevicePositionFront];
-        } else {
-            device = [AVCaptureDevice defaultDeviceWithDeviceType:AVCaptureDeviceTypeBuiltInWideAngleCamera mediaType:AVMediaTypeVideo position:AVCaptureDevicePositionBack];
-        }
-    } else {
-        // Pre iOS 10 code
-        if(direction == FACING_FRONT) {
-            for(AVCaptureDevice* d in [AVCaptureDevice devices]) {
-                if(d.position == AVCaptureDevicePositionFront) {
-                    device = d;
-                    break;
-                }
-            }
-        } else {
-            for(AVCaptureDevice* d in [AVCaptureDevice devices]) {
-                if(d.position == AVCaptureDevicePositionBack) {
-                    device = d;
-                    break;
-                }
-            }
-        }
-    }
+    device = [self cameraWithPosition];
     NSError *error = nil;
     AVCaptureDeviceInput *input = [AVCaptureDeviceInput deviceInputWithDevice:device error:&error];
     captureSession = [[AVCaptureSession alloc] init];
     [captureSession addInput:input];
+    if([AVCapturePhotoOutput class]) {
+        if(photoOutput == nil) {
+            photoOutput = [[AVCapturePhotoOutput alloc] init];
+            
+        }
+        if ([captureSession canAddOutput:photoOutput]) {
+            [captureSession addOutput:photoOutput];
+        }
+    }
+    else {
+        if(stillImageOutput == nil) {
+            stillImageOutput = [[AVCaptureStillImageOutput alloc] init];
+            NSDictionary *outputSettings = [[NSDictionary alloc] initWithObjectsAndKeys: AVVideoCodecJPEG, AVVideoCodecKey, nil];
+            [stillImageOutput setOutputSettings:outputSettings];
+        }
+        if ([captureSession canAddOutput:stillImageOutput]) {
+            [captureSession addOutput:stillImageOutput];
+        }
+        
+    }
+    
 
     previewLayer = [AVCaptureVideoPreviewLayer layerWithSession:captureSession];
     previewLayer.videoGravity = AVLayerVideoGravityResizeAspectFill;
@@ -193,16 +243,21 @@ extern JAVA_OBJECT nsDataToByteArr(NSData *data);
     [self updateFocus];
     [self updateVideoQuality];
 
-    [captureSession startRunning];
+    dispatch_sync(globalQueue, ^{
+        [captureSession startRunning];
+    });
 }
 
 -(void)lazyInit {
     dispatch_sync(dispatch_get_main_queue(), ^{
         container = [[CameraKitView alloc] init];
+        struct ThreadLocalData* d = getThreadLocalData();
         switch ( [AVCaptureDevice authorizationStatusForMediaType:AVMediaTypeVideo] ) {
             case AVAuthorizationStatusNotDetermined:
                 [AVCaptureDevice requestAccessForMediaType:AVMediaTypeVideo completionHandler:^( BOOL granted ) {
+                    initialized = YES;
                     if ( ! granted ) {
+                        com_codename1_camerakit_impl_CameraCallbacks_onError___java_lang_String_java_lang_String_java_lang_String(d, fromNSString(d, @"Permission denied"), fromNSString(d, @"Camera usage was denied.  To enabled Camera functionality, please grant access to the Camera in your system settings"), fromNSString(d, @"Camera Authorization was denied"));
                         authorized = NO;
                         return;
                     }
@@ -212,12 +267,17 @@ extern JAVA_OBJECT nsDataToByteArr(NSData *data);
                 break;
             case AVAuthorizationStatusDenied:
             case AVAuthorizationStatusRestricted:
+                initialized = YES;
                 authorized = NO;
+                com_codename1_camerakit_impl_CameraCallbacks_onError___java_lang_String_java_lang_String_java_lang_String(d, fromNSString(d, @"Permission denied"), fromNSString(d, @"Please grant access to use the camera in your system settings"), fromNSString(d, @"Camera Authorization was denied"));
                 break;
             case AVAuthorizationStatusAuthorized:
+                initialized = YES;
                 authorized = YES;
                 [self lazyInitPostAuthorization];
                 break;
+            default:
+                initialized = YES;
         }
     });
 }
@@ -346,6 +406,7 @@ extern JAVA_OBJECT nsDataToByteArr(NSData *data);
 }
 
 -(void)setJpegQuality:(int)param{
+    jpegQuality = param;
 }
 
 -(void)setCropOutput:(BOOL)param{
@@ -363,8 +424,17 @@ extern JAVA_OBJECT nsDataToByteArr(NSData *data);
 
 -(void)captureOutput:(AVCapturePhotoOutput *)captureOutput didFinishProcessingPhotoSampleBuffer:(CMSampleBufferRef)photoSampleBuffer previewPhotoSampleBuffer:(CMSampleBufferRef)previewPhotoSampleBuffer resolvedSettings:(AVCaptureResolvedPhotoSettings *)resolvedSettings bracketSettings:(AVCaptureBracketedStillImageSettings *)bracketSettings error:(NSError *)error {
     if(error == nil && !capturingVideo) {
-        NSData *d = [AVCapturePhotoOutput JPEGPhotoDataRepresentationForJPEGSampleBuffer:photoSampleBuffer previewPhotoSampleBuffer:previewPhotoSampleBuffer];
-        JAVA_OBJECT byteArray = nsDataToByteArr(d);
+        NSData *imageData = [AVCapturePhotoOutput JPEGPhotoDataRepresentationForJPEGSampleBuffer:photoSampleBuffer previewPhotoSampleBuffer:previewPhotoSampleBuffer];
+        UIImage *image = [UIImage imageWithData:imageData];
+        if (image.imageOrientation != UIImageOrientationUp) {
+            UIGraphicsBeginImageContextWithOptions(image.size, NO, image.scale);
+            [image drawInRect:(CGRect){0, 0, image.size}];
+            image = UIGraphicsGetImageFromCurrentImageContext();
+            UIGraphicsEndImageContext();
+            imageData = UIImageJPEGRepresentation(image, jpegQuality / 100.0f);
+            
+        }
+        JAVA_OBJECT byteArray = nsDataToByteArr(imageData);
         com_codename1_camerakit_impl_CameraCallbacks_onImage___byte_1ARRAY(getThreadLocalData(), byteArray);
         return;
     }
@@ -382,19 +452,11 @@ extern JAVA_OBJECT nsDataToByteArr(NSData *data);
         // iOS 10 and later code
         capturingVideo = NO;
         if([AVCapturePhotoOutput class]) {
-            if(photoOutput == nil) {
-                photoOutput = [[AVCapturePhotoOutput alloc] init];
-            }
             AVCapturePhotoSettings* settings = [AVCapturePhotoSettings photoSettings];
             [photoOutput capturePhotoWithSettings:settings delegate:self];
         } else {
             // based on https://stackoverflow.com/a/20296861/756809
-            if(stillImageOutput == nil) {
-                stillImageOutput = [[AVCaptureStillImageOutput alloc] init];
-                NSDictionary *outputSettings = [[NSDictionary alloc] initWithObjectsAndKeys: AVVideoCodecJPEG, AVVideoCodecKey, nil];
-                [stillImageOutput setOutputSettings:outputSettings];
-            }
-            [captureSession addOutput:stillImageOutput];
+            
             AVCaptureConnection *videoConnection = nil;
             for (AVCaptureConnection *connection in stillImageOutput.connections) {
                 for (AVCaptureInputPort *port in [connection inputPorts]) {
@@ -408,10 +470,24 @@ extern JAVA_OBJECT nsDataToByteArr(NSData *data);
                 }
             }
             [stillImageOutput captureStillImageAsynchronouslyFromConnection:videoConnection completionHandler:^(CMSampleBufferRef imageSampleBuffer, NSError *error) {
-                NSData *d = [AVCaptureStillImageOutput jpegStillImageNSDataRepresentation:imageSampleBuffer];
-                JAVA_OBJECT byteArray = nsDataToByteArr(d);
-                com_codename1_camerakit_impl_CameraCallbacks_onImage___byte_1ARRAY(getThreadLocalData(), byteArray);
-                [captureSession removeOutput:stillImageOutput];
+                if (error == nil) {
+                    NSData *imageData = [AVCaptureStillImageOutput jpegStillImageNSDataRepresentation:imageSampleBuffer];
+                    UIImage *image = [UIImage imageWithData:imageData];
+                    if (image.imageOrientation != UIImageOrientationUp) {
+                        UIGraphicsBeginImageContextWithOptions(image.size, NO, image.scale);
+                        [image drawInRect:(CGRect){0, 0, image.size}];
+                        image = UIGraphicsGetImageFromCurrentImageContext();
+                        UIGraphicsEndImageContext();
+                        imageData = UIImageJPEGRepresentation(image, jpegQuality / 100.0f);
+                        
+                    }
+                    JAVA_OBJECT byteArray = nsDataToByteArr(imageData);
+                    com_codename1_camerakit_impl_CameraCallbacks_onImage___byte_1ARRAY(getThreadLocalData(), byteArray);
+
+                } else {
+                    struct ThreadLocalData* d = getThreadLocalData();
+                com_codename1_camerakit_impl_CameraCallbacks_onError___java_lang_String_java_lang_String_java_lang_String(d, nil, nil, nil);
+                }
             }];
         }
     });

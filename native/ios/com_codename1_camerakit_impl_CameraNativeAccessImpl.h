@@ -32,6 +32,7 @@ const int VIDEO_QUALITY_QVGA = 6;
     int focus;
     int method;
     int videoQuality;
+    int jpegQuality;
     float zoom;
     BOOL authorized;
     BOOL capturingVideo;
@@ -41,9 +42,10 @@ const int VIDEO_QUALITY_QVGA = 6;
     AVCaptureVideoPreviewLayer* previewLayer;
     AVCaptureMovieFileOutput* movieOutput;
     AVCapturePhotoOutput* photoOutput;
-    
     // pre-iOS 10 API
     AVCaptureStillImageOutput* stillImageOutput;
+    dispatch_queue_t globalQueue;
+    BOOL initialized;
 }
 
 -(void)start;
