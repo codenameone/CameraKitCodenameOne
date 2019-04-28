@@ -2,7 +2,7 @@
 
 <img align="right" src="https://raw.githubusercontent.com/codenameone/CameraKitCodenameOne/master/camera-kit-screenshot.png" height="250">
 
-Camera Kit is a cross platform API for low level camera access. It's based on [Camera Kit Android](https://github.com/CameraKit/camerakit-android/) and uses it for the Android version of this API. In iOS the implementation is based directly on the native OS API's.
+Camera Kit is a cross platform API for low level camera access. It was originally based on [Camera Kit Android](https://github.com/CameraKit/camerakit-android/) for the Android version and styled its API similarly. However, as a result of problematic design choices and unclear direction the Android implementation was moved to [Golden Eye](https://github.com/infinum/Android-GoldenEye). The iOS the implementation is based directly on the native OS API's and so is the JavaScript implementation.
 
 **Important** not all API's are implemented in a cross platform way at this time as this cn1lib is highly experimental. Basic things might not work...
 
