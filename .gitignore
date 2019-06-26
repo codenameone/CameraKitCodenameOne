@@ -1,5 +1,5 @@
 
-*.jar
+lib/*.jar
 nbproject/private/
 build/
 nbbuild/
@@ -11,3 +11,4 @@ lib/CodenameOne_SRC.zip
 /CameraKitDemo/lib/impl
 /CameraKitDemo/lib/CameraKitCodenameOne.cn1lib
 /TestWebCamJavaSE
+Stubber.jar
