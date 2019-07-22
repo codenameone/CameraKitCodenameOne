@@ -37,6 +37,7 @@ extern JAVA_OBJECT nsDataToByteArr(NSData *data);
 -(void)stop{
     dispatch_sync(dispatch_get_main_queue(), ^{
         [captureSession stopRunning];
+        previewLayer = nil;
     });
 }
 
