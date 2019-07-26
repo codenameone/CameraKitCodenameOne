@@ -69,7 +69,7 @@ if(ck != null) {
 }
 ````
 
-You can see the full demo project [here](https://github.com/codenameone/CameraKitDemo/).
+You can see the full demo project [here](CameraKitDemo).
 
 ## Caveats
 
