@@ -1,4 +1,5 @@
 package com.codename1.camerakit.impl;
+import com.codename1.io.Log;
 import com.codename1.ui.Display;
 import com.codename1.ui.PeerComponent;
 import com.codename1.ui.util.ImageIO;
@@ -17,6 +18,7 @@ import java.io.ByteArrayOutputStream;
 import java.util.Map;
 import javax.swing.JComponent;
 import javax.swing.JFrame;
+import javax.swing.JPanel;
 
 public class CameraNativeAccessImpl implements com.codename1.camerakit.impl.CameraNativeAccess{
     private Webcam webcam;
@@ -66,6 +68,10 @@ public class CameraNativeAccessImpl implements com.codename1.camerakit.impl.Came
     private synchronized Webcam getWebcam() {
         if (webcam == null) {
             webcam = Webcam.getDefault();
+            if (webcam == null) {
+                Log.p("Failed to find any webcams usingn Webcam.getDefault()");
+                return null;
+            }
             webcam.addWebcamListener(new WebcamListener() {
                 @Override
                 public void webcamOpen(WebcamEvent we) {
@@ -94,20 +100,29 @@ public class CameraNativeAccessImpl implements com.codename1.camerakit.impl.Came
         }
         return webcam;
     }
-    
+    private boolean noWebcam;
     public void start() {
         if (starting || started) {
             return;
         }
         checkCameraUsageDescription();
         checkMicrophoneUsageDescription();
-        getWebcam().setViewSize(WebcamResolution.VGA.getSize());
+        Webcam cam = getWebcam();
+        if (cam == null) {
+            noWebcam = true;
+            Log.p("Failed to start because no webcam was found.");
+            return;
+        }
+        cam.setViewSize(WebcamResolution.VGA.getSize());
         starting = true;
         webcam.open(true);
 
     }
 
     public void stop() {
+        if (noWebcam) {
+            return;
+        }
         System.out.println("in stop");
         if (!started || stopping) {
             return;
@@ -121,18 +136,46 @@ public class CameraNativeAccessImpl implements com.codename1.camerakit.impl.Came
     }
 
     public int getPreviewHeight() {
+        if (noWebcam) {
+            return 0;
+        }
+        getWebcam();
+        if (webcam == null) {
+            return 0;
+        }
         return getWebcam().getViewSize().height;
     }
     
     public int getPreviewWidth() {
+        if (noWebcam) {
+            return 0;
+        }
+        getWebcam();
+        if (webcam == null) {
+            return 0;
+        }
         return getWebcam().getViewSize().width;
     }
     
     public int getCaptureHeight() {
+        if (noWebcam) {
+            return 0;
+        }
+        getWebcam();
+        if (webcam == null) {
+            return 0;
+        }
         return getWebcam().getDevice().getResolution().height;
     }
     
     public int getCaptureWidth() {
+        if (noWebcam) {
+            return 0;
+        }
+        getWebcam();
+        if (webcam == null) {
+            return 0;
+        }
         return getWebcam().getDevice().getResolution().width;
     }
 
@@ -167,7 +210,13 @@ public class CameraNativeAccessImpl implements com.codename1.camerakit.impl.Came
 
     
     private WebcamPanel getViewInternal() {
-        
+        if (noWebcam) {
+           return null;
+        }
+        getWebcam();
+        if (webcam == null) {
+            return null;
+        }
         if (view == null) {
             
             //Webcam webcam = Webcam.getDefault();
@@ -222,8 +271,11 @@ public class CameraNativeAccessImpl implements com.codename1.camerakit.impl.Came
             } catch (Exception ex) {
                 throw new RuntimeException(ex);
             }
-            
-            peerView = PeerComponent.create(view);//com.codename1.impl.javase.JavaSEPort.instance.createHeavyPeer(view);
+            if (view == null) {
+                peerView = PeerComponent.create(new JPanel());
+            } else {
+                peerView = PeerComponent.create(view);//com.codename1.impl.javase.JavaSEPort.instance.createHeavyPeer(view);
+            }
            
         }
         return peerView;
@@ -242,6 +294,9 @@ public class CameraNativeAccessImpl implements com.codename1.camerakit.impl.Came
     public static final int VIDEO_QUALITY_QVGA = 6;
      */
     public void setVideoQuality(int param) {
+        if (noWebcam) {
+            return;
+        }
         Dimension res;
         switch (param) {
             case 0:
@@ -257,9 +312,17 @@ public class CameraNativeAccessImpl implements com.codename1.camerakit.impl.Came
                 res = WebcamResolution.UHD4K.getSize();
                 break;
             case 4:
+                if (getWebcam() == null) {
+                    res = new Dimension(0,0);
+                    break;
+                }
                 res = findHighestQuality(getWebcam());
                 break;
             case 5:
+                if (getWebcam() == null) {
+                    res = new Dimension(0,0);
+                    break;
+                }
                 res = findLowestQuality(getWebcam());
                 break;
             case 6:
@@ -271,6 +334,9 @@ public class CameraNativeAccessImpl implements com.codename1.camerakit.impl.Came
                         
                 
         }
+        if (getWebcam() == null) {
+            return;
+        }
         getWebcam().getDevice().setResolution(res);
         
     }
@@ -280,6 +346,9 @@ public class CameraNativeAccessImpl implements com.codename1.camerakit.impl.Came
     }
     
     private Dimension findLowestQuality(Webcam webcam) {
+        if (webcam == null) {
+            return new Dimension(0,0);
+        }
         Dimension min = null;
         for (Dimension res : webcam.getDevice().getResolutions()) {
             if (min == null || countPixels(res) < countPixels(min)) {
@@ -290,6 +359,9 @@ public class CameraNativeAccessImpl implements com.codename1.camerakit.impl.Came
     }
     
     private Dimension findHighestQuality(Webcam webcam) {
+        if (webcam == null) {
+            return new Dimension(0,0);
+        }
         Dimension max = null;
         for (Dimension res : webcam.getDevice().getResolutions()) {
             if (max == null || countPixels(res) > countPixels(max)) {
@@ -331,6 +403,9 @@ public class CameraNativeAccessImpl implements com.codename1.camerakit.impl.Came
     }
 
     public void captureImage() {
+        if (noWebcam || webcam == null) {
+            throw new IllegalStateException("No webcam found");
+        }
         BufferedImage image = webcam.getImage();
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
         try {
