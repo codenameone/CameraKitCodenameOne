@@ -10,5 +10,8 @@ lib/CodenameOne_SRC.zip
 /CameraKitDemo/native/internal_tmp
 /CameraKitDemo/lib/impl
 /CameraKitDemo/lib/CameraKitCodenameOne.cn1lib
+/CameraKitDemo/**/*.jar
+/CameraKitDemo/*.jar
+*.jar
 /TestWebCamJavaSE
 Stubber.jar
